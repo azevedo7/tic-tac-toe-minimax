@@ -62,7 +62,7 @@ function game() {
 
 function gameControl () {
     let board = game()
-    let bot = minimax();
+    let bot = botInit();
 
     const players = [
         {
@@ -77,9 +77,10 @@ function gameControl () {
 
     const botPlay = (player) => {
         let s = board.getBoard()
-        let move = bot.getBestMove(s, false);
+        let move = bot.getBestMove(s, player);
 
         board.play(move[0], move[1], player);
+        console.log(bot.getBestMove(s, player))
         board.printBoard()
 
     }
@@ -87,52 +88,78 @@ function gameControl () {
     return {
         board,
         botPlay,
+        bot
     }
 }
 
 
-function minimax () {
+function botInit () {
     let n = 3;
-    let bestMove;
+    
 
     const getBestMove = (s, player) => {
-        calcMove(s, player);
+        let bestMove;
+        let bestScore;
+        if (player == 1){
+            bestScore = -Infinity;
+        } else {
+            bestScore = Infinity;
+        }
+
+        for(let r = 0; r < n; r++) {
+            for(let c = 0; c < n; c++){
+                if (s[r][c] == 0) {
+                    if(player == 1) {
+                        s[r][c] = 1;
+                    } else {
+                        s[r][c] = -1;
+                    }
+                    score = minimax(s, player)
+                    console.log(score);
+                    if(player == 1){
+                        if(score > bestScore) {
+                            bestScore = score;
+                            bestMove = [r,c];
+                        }
+                    } else {
+                        if (score < bestScore) {
+                            bestScore = score;
+                            bestMove =[r,c];
+                        }
+                    }
+                }
+            }
+        }
         return bestMove;
+
     };
 
-    function calcMove(s, player) {   //Player min = false; max = true
-
-        if (checkWin(s) !== false) { // Check if game is over
-            return checkWin(s); // Get value of board
+    function minimax(s, player) {   //Player min = false; max = true
+        let terminal = checkWin(s)
+        if (terminal !== false) { // Check if game is over
+            return terminal; // Get value of board
             
         }
-        if (player) {  // If true, so if max
+        if (player == 1) {  // If true, so if max
             let value = -Infinity;
             moves(s).forEach((move) => { // moves() gets each possible move of board
                 s = JSON.parse(JSON.stringify(s));
-                temp = Math.max(calcMove(result(s, move, player), false)); // Result(s,move) gets board with the extra move
-                if(temp > value){
-                    value = temp;
-                    bestMove = move;
-                } 
+                value = Math.max(minimax(result(s, move, player), -1), value); // Result(s,move) gets board with the extra move
             })
             return value;
         } else {
             let value = Infinity;
             moves(s).forEach((move) => {
                 s = JSON.parse(JSON.stringify(s));
-                temp = Math.min(calcMove(result(s,move,player), true));
-                if(temp < value) {
-                    value = temp;
-                    bestMove = move;
-                }
+                value = Math.min(minimax(result(s,move,player), 1), value);
             })
             return value
         }
     }
 
     function checkWin (s) {
-        let d1, d2 = 0;
+        let d1 = 0;
+        let d2 = 0;
         let total = 0;
     
 
@@ -142,18 +169,19 @@ function minimax () {
             for(let c = 0; c<n; c++) {
                 row += s[r][c];
                 col += s[c][r];
-                total += s[r][c];
+                total += Math.abs(s[r][c]); // Get total cells used
 
                 if (r == c) {d1 += s[r][c]}
                 if (r+c == n+1) {d2 += s[r][c]}
             }
-            if(total == n) {return 1} 
-            else if(total == -n) {return -1}
+            if(row == n || col == n) {return 1} 
+            else if(row == -n || col == -n) {return -1}
+            if (total == n*n) {return 0};
         }
         if(d1 == n || d2 == n) {return 1};
         if(d1 == -n || d2 == -n) {return -1};
         
-        if (total == n*n) {return 0};
+        
         return false;
     }
 
@@ -174,7 +202,7 @@ function minimax () {
         let row = move[0];
         let col = move[1];
 
-        if(player) { // If max
+        if(player == 1) { // If max
             s[row][col] = 1;
         } else { // If min
             s[row][col] = -1;
@@ -184,6 +212,8 @@ function minimax () {
     
 
     return{
-        getBestMove
+        getBestMove,
+        checkWin,
+        minimax
     }
 }
